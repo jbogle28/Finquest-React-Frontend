@@ -2,8 +2,7 @@ import axios from 'axios';
 import authService from './authService';
 import { LoadingManager } from '../context/LoadingContext';
 
-const BASE_URL = 'http://127.0.0.1:5000';
-
+const BASE_URL = process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'http://127.0.0.1:5000';
 const getHeaders = () => {
     const user = authService.getCurrentUser();
     return {
