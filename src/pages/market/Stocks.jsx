@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    TrendingUp, Info, Zap, ShieldCheck, AlertCircle, 
+    TrendingUp, Zap, ShieldCheck, AlertCircle, 
     PlayCircle, Loader2, BarChart3, Castle, X, ShoppingCart
 } from 'lucide-react';
 import financeService from '../../services/financeService';
