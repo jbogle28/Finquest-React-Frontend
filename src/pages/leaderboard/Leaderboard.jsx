@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import authService from '../../services/authService';
 import WealthLeaderboard from './WealthLeaderboard';
 
+const BASE_URL = process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'http://127.0.0.1:5000';
+
 const Leaderboard = () => {
     const [players, setPlayers] = useState([]);
     const [loading, setLoading] = useState(true);
