@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { LoadingManager } from '../context/LoadingContext';
 
-const API_URL = 'http://localhost:5000/finance';
+const API_URL = ${process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'http://localhost:5000'}/finance;
 
 /**
  * GLOBAL AXIOS CONFIGURATION
