@@ -5,7 +5,7 @@ import {
     ArrowRight, Loader2, Info, X, Wallet 
 } from 'lucide-react';
 import financeService from '../../services/financeService';
-
+import { LoadingManager } from '../../context/LoadingContext';
 const Bonds = () => {
     const [bonds, setBonds] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -65,9 +65,10 @@ const Bonds = () => {
             </div>
 
             {loading ? (
-                <div style={styles.loaderContainer}>
-                    <Loader2 size={40} className="animate-spin" color="#3b82f6" />
-                    <p>Loading Bond Offerings...</p>
+                <LoadingScreen /> 
+            ) : (
+                <div style={styles.marketGrid}>
+                    {/* ... existing map code ... */}
                 </div>
             ) : (
                 <div style={{
