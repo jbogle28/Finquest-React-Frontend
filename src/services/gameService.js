@@ -2,8 +2,7 @@ import axios from 'axios';
 import authService from './authService';
 import { LoadingManager } from '../context/LoadingContext';
 
-const API_URL = 'http://localhost:5000/game';
-
+const API_URL = ${process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'http://localhost:5000'}/game;
 /**
  * GLOBAL AXIOS CONFIGURATION
  */
