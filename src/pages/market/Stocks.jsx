@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import financeService from '../../services/financeService';
 import StocksTutorial from './StocksTutorial';
+import { LoadingManager } from '../../context/LoadingContext';
 
 const Stocks = () => {
     const [stocks, setStocks] = useState([]);
@@ -93,9 +94,10 @@ const Stocks = () => {
             </div>
 
             {loading ? (
-                <div style={styles.loaderContainer}>
-                    <Loader2 size={40} className="animate-spin" color="#a855f7" />
-                    <p>Fetching Live Market Data...</p>
+                <LoadingScreen /> 
+            ) : (
+                <div style={styles.marketGrid}>
+                    {/* ... existing map code ... */}
                 </div>
             ) : (
                 <div style={{
