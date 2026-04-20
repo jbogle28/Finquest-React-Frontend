@@ -184,7 +184,7 @@ const ProfileSettings = () => {
                                 }}
                             >
                                 <img 
-                                    src={`http://127.0.0.1:5000/${item.image_url}`} 
+                                    src={`${BASE_URL}/${item.image_url}`} 
                                     alt={item.name} 
                                     style={styles.avatarImg} 
                                 />
