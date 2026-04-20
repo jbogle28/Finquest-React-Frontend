@@ -154,7 +154,7 @@ const Leaderboard = () => {
                                                     }}>
                                                         {player.avatar_url ? (
                                                             <img 
-                                                                src={`http://127.0.0.1:5000/${player.avatar_url}`} 
+                                                                src={`${BASE_URL}/${player.avatar_url}`} 
                                                                 alt={player.username} 
                                                                 style={styles.avatarImg}
                                                             />
