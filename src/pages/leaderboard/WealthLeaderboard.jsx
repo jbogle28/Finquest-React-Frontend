@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, DollarSign, User } from 'lucide-react';
+const BASE_URL = process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'http://127.0.0.1:5000';
 
 const WealthLeaderboard = ({ players, currentUsername, isMobile }) => {
     return (
@@ -29,7 +30,7 @@ const WealthLeaderboard = ({ players, currentUsername, isMobile }) => {
                             borderColor: player.username === currentUsername ? '#10b981' : '#334155'
                         }}>
                             {player.avatar_url ? (
-                                <img src={`http://127.0.0.1:5000/${player.avatar_url}`} alt="" style={styles.avatarImg} />
+                                <img src={`${BASE_URL}/${player.avatar_url}`} alt="" style={styles.avatarImg} />
                             ) : (
                                 <User size={isMobile ? 18 : 24} color="#64748b" />
                             )}
