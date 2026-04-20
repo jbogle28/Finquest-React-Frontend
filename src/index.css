@@ -1,0 +1,109 @@
+/* src/index.css */
+
+:root {
+  /* Brand Colors */
+  --bg-deep: #020617;
+  --bg-card: #0f172a;
+  --bg-hover: #1e293b;
+  --primary-purple: #facc15; 
+  --primary-glow: rgba(250, 204, 21, 0.2);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  
+  /* Status Colors */
+  --status-gold: #facc15;
+  --status-red: #ef4444;
+  --status-green: #10b981;
+
+  /* Spacing & Borders */
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --transition: all 0.3s ease;
+
+  /* Mobile-First Spacing */
+  --container-padding: 1rem;
+}
+
+/* 1. Fluid Typography & Global Reset */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  /* Crucial: ensures no hidden scrollbar shifts the background */
+  overflow-x: hidden; 
+}
+
+html {
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  html { font-size: 14px; }
+  :root { --container-padding: 0.75rem; }
+}
+
+body {
+  background-color: var(--bg-deep);
+  color: var(--text-main);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+/* 2. Responsive Containers */
+/* Fix: Removed max-width from the base class so it doesn't "box" the auth pages. 
+   Apply max-width to a child wrapper inside your dashboard instead. */
+.app-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 3. Global Reusable Classes */
+.fin-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--bg-hover);
+  border-radius: var(--radius-lg);
+  transition: var(--transition);
+  padding: 1.5rem;
+}
+
+@media (hover: hover) {
+  .fin-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary-purple);
+    box-shadow: 0 0 20px var(--primary-glow);
+  }
+}
+
+.glass-pill {
+  background-color: var(--bg-hover);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* 4. Game-Specific Responsiveness */
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+img, canvas, svg {
+  max-width: 100%;
+  height: auto;
+  display: block; /* Removes weird inline spacing at the bottom */
+}
+
+button {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  touch-action: manipulation;
+}
