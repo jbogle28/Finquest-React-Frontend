@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle2, Coins, Sparkles, X, AlertCircle, CheckCircle } from 'lucide-react';
 import storeService from '../../services/storeService';
 
+const BASE_URL = process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'http://127.0.0.1:5000';
+
 const Store = () => {
     const [items, setItems] = useState([]);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -9,6 +11,7 @@ const Store = () => {
 
     useEffect(() => {
         fetchStoreData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         const handleResize = () => setIsMobile(window.innerWidth < 768);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
@@ -94,7 +97,7 @@ const Store = () => {
                                 height: isMobile ? '55px' : '110px',
                             }}>
                                 <img 
-                                    src={`http://127.0.0.1:5000/${item.image}`} 
+                                    src={`${BASE_URL}/${item.image}`} 
                                     alt={item.name} 
                                     style={styles.avatarImg} 
                                 />
