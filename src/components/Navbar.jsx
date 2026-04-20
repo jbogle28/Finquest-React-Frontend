@@ -17,7 +17,7 @@ const Navbar = ({ user, onLogout }) => {
     const [liveUser, setLiveUser] = useState(user);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-    const BASE_URL = 'http://127.0.0.1:5000';
+    const BASE_URL = process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'http://127.0.0.1:5000';
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
