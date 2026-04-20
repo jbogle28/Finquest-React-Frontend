@@ -3,6 +3,8 @@ import { User, Save, Edit2, X, CheckCircle, AlertCircle, Camera } from 'lucide-r
 import authService from '../../services/authService';
 import profileService from '../../services/profileService';
 
+const BASE_URL = process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'http://127.0.0.1:5000';
+
 const ProfileSettings = () => {
     const [userData, setUserData] = useState(null);
     const [inventory, setInventory] = useState([]);
@@ -95,7 +97,7 @@ const ProfileSettings = () => {
                 <div style={styles.headerMain}>
                     <div style={styles.avatarCircle}>
                         <img 
-                            src={activeAvatar ? `http://127.0.0.1:5000/${activeAvatar.image_url}` : '/assets/images/default-avatar.png'} 
+                            src={activeAvatar ? `${BASE_URL}/${activeAvatar.image_url}` : '/assets/images/default-avatar.png'} 
                             alt="Profile" 
                             style={styles.headerAvatarImg}
                         />
