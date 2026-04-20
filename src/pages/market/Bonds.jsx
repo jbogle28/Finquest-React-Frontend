@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Building2, ShieldCheck, Timer, Percent, 
-    ArrowRight, Loader2, Info, X, Wallet 
+    ArrowRight, Info, X, Wallet 
 } from 'lucide-react';
 import financeService from '../../services/financeService';
-import { LoadingManager } from '../../context/LoadingContext';
+
 const Bonds = () => {
     const [bonds, setBonds] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     
     // Custom Purchase Modal State
@@ -28,8 +27,6 @@ const Bonds = () => {
             setBonds(data);
         } catch (err) {
             console.error("Bond fetch failed", err);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -43,6 +40,8 @@ const Bonds = () => {
             const result = await financeService.purchaseBond(bond.id);
             setStatus({ type: 'success', msg: result.msg || "Bond purchased successfully!" });
             setPurchaseModal({ show: false, bond: null });
+            // Optionally refresh bonds if purchasing affects availability
+            loadBonds();
         } catch (err) {
             setStatus({ type: 'error', msg: "Purchase failed. Check your balance." });
         }
@@ -64,74 +63,66 @@ const Bonds = () => {
                 </div>
             </div>
 
-            {loading ? (
-                <LoadingScreen /> 
-            ) : (
-                <div style={styles.marketGrid}>
-                    {/* ... existing map code ... */}
-                </div>
-            ) : (
-                <div style={{
-                    ...styles.marketGrid,
-                    gridTemplateColumns: gridColumns,
-                    gap: isDesktop ? '20px' : '10px'
-                }}>
-                    {bonds.map((bond) => (
-                        <motion.div 
-                            key={bond.id} 
-                            whileHover={{ y: -5 }}
-                            style={{
-                                ...styles.bondCard,
-                                padding: isDesktop ? '20px' : '12px'
-                            }}
+            <div style={{
+                ...styles.marketGrid,
+                gridTemplateColumns: gridColumns,
+                gap: isDesktop ? '20px' : '10px'
+            }}>
+                {bonds.map((bond) => (
+                    <motion.div 
+                        key={bond.id} 
+                        whileHover={{ y: -5 }}
+                        style={{
+                            ...styles.bondCard,
+                            padding: isDesktop ? '20px' : '12px'
+                        }}
+                    >
+                        <div style={styles.cardHeader}>
+                            <div style={styles.issuerGroup}>
+                                <Building2 size={isDesktop ? 16 : 12} color="#94a3b8" />
+                                <span style={styles.issuerName}>{bond.issuer}</span>
+                            </div>
+                            <div style={{
+                                ...styles.riskBadge,
+                                color: bond.risk === 'Low' ? '#10b981' : '#f59e0b',
+                                backgroundColor: bond.risk === 'Low' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'
+                            }}>
+                                {bond.risk} Risk
+                            </div>
+                        </div>
+
+                        <div style={styles.priceSection}>
+                            <span style={styles.priceLabel}>Face Value</span>
+                            <h2 style={{...styles.priceValue, fontSize: isDesktop ? '1.8rem' : '1.2rem'}}>${bond.price}</h2>
+                        </div>
+
+                        <div style={styles.statsGrid}>
+                            <div style={styles.statBox}>
+                                <Percent size={12} color="#3b82f6" />
+                                <div style={styles.statInfo}>
+                                    <span style={styles.statLabel}>Coupon</span>
+                                    <span style={styles.statValue}>{bond.coupon_rate}</span>
+                                </div>
+                            </div>
+                            <div style={styles.statBox}>
+                                <Timer size={12} color="#a855f7" />
+                                <div style={styles.statInfo}>
+                                    <span style={styles.statLabel}>Term</span>
+                                    <span style={styles.statValue}>{bond.duration_hours}h</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={() => initiatePurchase(bond)}
+                            style={{...styles.buyBtn, fontSize: isDesktop ? '0.9rem' : '0.75rem'}}
                         >
-                            <div style={styles.cardHeader}>
-                                <div style={styles.issuerGroup}>
-                                    <Building2 size={isDesktop ? 16 : 12} color="#94a3b8" />
-                                    <span style={styles.issuerName}>{bond.issuer}</span>
-                                </div>
-                                <div style={{
-                                    ...styles.riskBadge,
-                                    color: bond.risk === 'Low' ? '#10b981' : '#f59e0b',
-                                    backgroundColor: bond.risk === 'Low' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'
-                                }}>
-                                    {bond.risk} Risk
-                                </div>
-                            </div>
-
-                            <div style={styles.priceSection}>
-                                <span style={styles.priceLabel}>Face Value</span>
-                                <h2 style={{...styles.priceValue, fontSize: isDesktop ? '1.8rem' : '1.2rem'}}>${bond.price}</h2>
-                            </div>
-
-                            <div style={styles.statsGrid}>
-                                <div style={styles.statBox}>
-                                    <Percent size={12} color="#3b82f6" />
-                                    <div style={styles.statInfo}>
-                                        <span style={styles.statLabel}>Coupon</span>
-                                        <span style={styles.statValue}>{bond.coupon_rate}</span>
-                                    </div>
-                                </div>
-                                <div style={styles.statBox}>
-                                    <Timer size={12} color="#a855f7" />
-                                    <div style={styles.statInfo}>
-                                        <span style={styles.statLabel}>Term</span>
-                                        <span style={styles.statValue}>{bond.duration_hours}h</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button 
-                                onClick={() => initiatePurchase(bond)}
-                                style={{...styles.buyBtn, fontSize: isDesktop ? '0.9rem' : '0.75rem'}}
-                            >
-                                Invest Now
-                                <ArrowRight size={14} />
-                            </button>
-                        </motion.div>
-                    ))}
-                </div>
-            )}
+                            Invest Now
+                            <ArrowRight size={14} />
+                        </button>
+                    </motion.div>
+                ))}
+            </div>
 
             {/* Custom Purchase Modal */}
             <AnimatePresence>
@@ -143,8 +134,8 @@ const Bonds = () => {
                             exit={{ scale: 0.9, opacity: 0 }}
                             style={{
                                 ...styles.modalContent,
-                                width: isDesktop ? '400px' : 'calc(50% - 15px)',
-                                minWidth: isDesktop ? '400px' : '160px',
+                                width: isDesktop ? '400px' : '90%',
+                                minWidth: isDesktop ? '300px' : 'auto',
                                 padding: isDesktop ? '24px' : '16px'
                             }}
                         >
@@ -209,7 +200,6 @@ const styles = {
     header: { marginBottom: '30px' },
     title: { fontSize: '1.4rem', fontWeight: '900', margin: 0 },
     subtitle: { color: '#94a3b8', margin: '2px 0 0 0', fontSize: '0.75rem' },
-    loaderContainer: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '50vh', gap: '15px', color: '#94a3b8' },
     marketGrid: { display: 'grid' },
     bondCard: { 
         background: '#1e293b', borderRadius: '24px', 
