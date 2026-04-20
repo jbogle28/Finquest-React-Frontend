@@ -2,15 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     TrendingUp, Zap, ShieldCheck, AlertCircle, 
-    PlayCircle, Loader2, BarChart3, Castle, X, ShoppingCart
+    PlayCircle, BarChart3, Castle, X, ShoppingCart
 } from 'lucide-react';
 import financeService from '../../services/financeService';
 import StocksTutorial from './StocksTutorial';
-import { LoadingManager } from '../../context/LoadingContext';
 
 const Stocks = () => {
     const [stocks, setStocks] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [showTutorial, setShowTutorial] = useState(false);
     const [selectedStock, setSelectedStock] = useState(null);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -33,8 +31,6 @@ const Stocks = () => {
             if (data.length > 0) setSelectedStock(data[0]);
         } catch (err) {
             console.error("Market fetch failed", err);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -45,8 +41,9 @@ const Stocks = () => {
     const confirmTrade = async () => {
         const { stock, quantity } = tradeModal;
         try {
+            // Using 'BUY' as default action per your component logic
             const result = await financeService.tradeStock(stock.id, 'BUY', parseInt(quantity));
-            setTradeStatus({ type: 'success', msg: result.msg });
+            setTradeStatus({ type: 'success', msg: result.msg || "Trade Successful!" });
             setTradeModal({ show: false, stock: null, quantity: 1 });
             loadMarket(); 
         } catch (err) {
@@ -93,109 +90,101 @@ const Stocks = () => {
                 </button>
             </div>
 
-            {loading ? (
-                <LoadingScreen /> 
-            ) : (
-                <div style={styles.marketGrid}>
-                    {/* ... existing map code ... */}
-                </div>
-            ) : (
-                <div style={{
-                    ...styles.marketGrid,
-                    gridTemplateColumns: gridColumns,
-                    gap: isDesktop ? '20px' : '10px'
-                }}>
-                    {stocks.map((stock, index) => (
-                        <motion.div 
-                            key={stock.id} 
-                            id={index === 0 ? "tutorial-anchor-card" : null}
-                            whileHover={{ y: -5 }}
-                            style={{
-                                ...styles.stockCard,
-                                padding: isDesktop ? '20px' : '12px'
-                            }}
+            <div style={{
+                ...styles.marketGrid,
+                gridTemplateColumns: gridColumns,
+                gap: isDesktop ? '20px' : '10px'
+            }}>
+                {stocks.map((stock, index) => (
+                    <motion.div 
+                        key={stock.id} 
+                        id={index === 0 ? "tutorial-anchor-card" : null}
+                        whileHover={{ y: -5 }}
+                        style={{
+                            ...styles.stockCard,
+                            padding: isDesktop ? '20px' : '12px'
+                        }}
+                    >
+                        <div style={styles.cardHeader}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px' }}>
+                                <span style={styles.ticker}>{stock.ticker}</span>
+                                <div style={styles.moatBadge} title={stock.metrics?.moat}>
+                                    <Castle size={10} color="#f59e0b" />
+                                    <span>Moat</span>
+                                </div>
+                            </div>
+                            {renderSparkline(stock.price, stock.intrinsic_value)}
+                        </div>
+                        
+                        <div style={{ marginBottom: '12px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <span style={{...styles.price, fontSize: isDesktop ? '1.5rem' : '1.1rem'}}>${stock.price}</span>
+                                <span style={{ 
+                                    ...styles.intrinsicLabel, 
+                                    fontSize: isDesktop ? '0.75rem' : '0.65rem',
+                                    color: stock.price < stock.intrinsic_value ? '#10b981' : '#64748b' 
+                                }}>
+                                    Value: ${stock.intrinsic_value}
+                                </span>
+                            </div>
+                            <h3 style={{...styles.companyName, fontSize: isDesktop ? '0.9rem' : '0.7rem'}}>{stock.company}</h3>
+                        </div>
+                        
+                        <div style={{...styles.metricsGrid, gap: isDesktop ? '12px' : '6px', padding: isDesktop ? '12px' : '8px'}}>
+                            <div id={index === 0 ? "step-roe" : null} style={styles.metric}>
+                                <div style={styles.labelGroup}>
+                                    <Zap size={10} color="#a855f7" />
+                                    <span style={styles.label}>ROE</span>
+                                </div>
+                                <span style={{...styles.value, fontSize: isDesktop ? '0.9rem' : '0.75rem'}}>{stock.metrics?.roe}</span>
+                            </div>
+
+                            <div id={index === 0 ? "step-safety" : null} style={styles.metric}>
+                                <div style={styles.labelGroup}>
+                                    <ShieldCheck size={10} color={stock.margin_of_safety > 20 ? '#10b981' : '#f43f5e'} />
+                                    <span style={styles.label}>Safety</span>
+                                </div>
+                                <span style={{
+                                    ...styles.value, 
+                                    fontSize: isDesktop ? '0.9rem' : '0.75rem',
+                                    color: stock.margin_of_safety > 20 ? '#10b981' : '#f43f5e'
+                                }}>
+                                    {stock.margin_of_safety}%
+                                </span>
+                            </div>
+
+                            <div style={styles.metric}>
+                                <div style={styles.labelGroup}>
+                                    <BarChart3 size={10} color="#3b82f6" />
+                                    <span style={styles.label}>Margin</span>
+                                </div>
+                                <span style={{...styles.value, fontSize: isDesktop ? '0.9rem' : '0.75rem'}}>{stock.metrics?.profit_margin}</span>
+                            </div>
+
+                            <div id={index === 0 ? "step-debt" : null} style={styles.metric}>
+                                <div style={styles.labelGroup}>
+                                    <AlertCircle size={10} color="#f59e0b" />
+                                    <span style={styles.label}>Debt</span>
+                                </div>
+                                <span style={{...styles.value, fontSize: isDesktop ? '0.9rem' : '0.75rem'}}>{stock.metrics?.debt_to_equity}</span>
+                            </div>
+                        </div>
+
+                        <div style={{...styles.moatBox, padding: isDesktop ? '10px' : '6px'}}>
+                            <p style={{...styles.moatText, fontSize: isDesktop ? '0.7rem' : '0.6rem'}}>
+                                {stock.metrics?.moat}
+                            </p>
+                        </div>
+
+                        <button 
+                            onClick={() => initiateTrade(stock)}
+                            style={{...styles.buyBtn, fontSize: isDesktop ? '0.85rem' : '0.75rem'}}
                         >
-                            <div style={styles.cardHeader}>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px' }}>
-                                    <span style={styles.ticker}>{stock.ticker}</span>
-                                    <div style={styles.moatBadge} title={stock.metrics.moat}>
-                                        <Castle size={10} color="#f59e0b" />
-                                        <span>Moat</span>
-                                    </div>
-                                </div>
-                                {renderSparkline(stock.price, stock.intrinsic_value)}
-                            </div>
-                            
-                            <div style={{ marginBottom: '12px' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <span style={{...styles.price, fontSize: isDesktop ? '1.5rem' : '1.1rem'}}>${stock.price}</span>
-                                    <span style={{ 
-                                        ...styles.intrinsicLabel, 
-                                        fontSize: isDesktop ? '0.75rem' : '0.65rem',
-                                        color: stock.price < stock.intrinsic_value ? '#10b981' : '#64748b' 
-                                    }}>
-                                        Value: ${stock.intrinsic_value}
-                                    </span>
-                                </div>
-                                <h3 style={{...styles.companyName, fontSize: isDesktop ? '0.9rem' : '0.7rem'}}>{stock.company}</h3>
-                            </div>
-                            
-                            <div style={{...styles.metricsGrid, gap: isDesktop ? '12px' : '6px', padding: isDesktop ? '12px' : '8px'}}>
-                                <div id={index === 0 ? "step-roe" : null} style={styles.metric}>
-                                    <div style={styles.labelGroup}>
-                                        <Zap size={10} color="#a855f7" />
-                                        <span style={styles.label}>ROE</span>
-                                    </div>
-                                    <span style={{...styles.value, fontSize: isDesktop ? '0.9rem' : '0.75rem'}}>{stock.metrics.roe}</span>
-                                </div>
-
-                                <div id={index === 0 ? "step-safety" : null} style={styles.metric}>
-                                    <div style={styles.labelGroup}>
-                                        <ShieldCheck size={10} color={stock.margin_of_safety > 20 ? '#10b981' : '#f43f5e'} />
-                                        <span style={styles.label}>Safety</span>
-                                    </div>
-                                    <span style={{
-                                        ...styles.value, 
-                                        fontSize: isDesktop ? '0.9rem' : '0.75rem',
-                                        color: stock.margin_of_safety > 20 ? '#10b981' : '#f43f5e'
-                                    }}>
-                                        {stock.margin_of_safety}%
-                                    </span>
-                                </div>
-
-                                <div style={styles.metric}>
-                                    <div style={styles.labelGroup}>
-                                        <BarChart3 size={10} color="#3b82f6" />
-                                        <span style={styles.label}>Margin</span>
-                                    </div>
-                                    <span style={{...styles.value, fontSize: isDesktop ? '0.9rem' : '0.75rem'}}>{stock.metrics.profit_margin}</span>
-                                </div>
-
-                                <div id={index === 0 ? "step-debt" : null} style={styles.metric}>
-                                    <div style={styles.labelGroup}>
-                                        <AlertCircle size={10} color="#f59e0b" />
-                                        <span style={styles.label}>Debt</span>
-                                    </div>
-                                    <span style={{...styles.value, fontSize: isDesktop ? '0.9rem' : '0.75rem'}}>{stock.metrics.debt_to_equity}</span>
-                                </div>
-                            </div>
-
-                            <div style={{...styles.moatBox, padding: isDesktop ? '10px' : '6px'}}>
-                                <p style={{...styles.moatText, fontSize: isDesktop ? '0.7rem' : '0.6rem'}}>
-                                    {stock.metrics.moat}
-                                </p>
-                            </div>
-
-                            <button 
-                                onClick={() => initiateTrade(stock)}
-                                style={{...styles.buyBtn, fontSize: isDesktop ? '0.85rem' : '0.75rem'}}
-                            >
-                                Buy {stock.ticker}
-                            </button>
-                        </motion.div>
-                    ))}
-                </div>
-            )}
+                            Buy {stock.ticker}
+                        </button>
+                    </motion.div>
+                ))}
+            </div>
 
             {/* Custom Trade Modal */}
             <AnimatePresence>
@@ -207,8 +196,8 @@ const Stocks = () => {
                             exit={{ scale: 0.9, opacity: 0 }}
                             style={{
                                 ...styles.modalContent,
-                                width: isDesktop ? '400px' : 'calc(50% - 15px)', // Matches container logic
-                                minWidth: isDesktop ? '400px' : '160px',
+                                width: isDesktop ? '400px' : '90%', 
+                                minWidth: isDesktop ? '300px' : 'auto',
                                 padding: isDesktop ? '24px' : '16px'
                             }}
                         >
@@ -295,7 +284,6 @@ const styles = {
         color: 'white', border: 'none', padding: '8px 12px', borderRadius: '10px', 
         fontWeight: '700', cursor: 'pointer', fontSize: '0.75rem'
     },
-    loaderContainer: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '50vh', gap: '15px', color: '#94a3b8' },
     marketGrid: { display: 'grid' },
     stockCard: { 
         background: '#1e293b', borderRadius: '20px', 
