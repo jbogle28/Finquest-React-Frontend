@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { LoadingManager } from '../context/LoadingContext';
 
-const API_URL = ${process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'http://localhost:5000'}/finance;
-
+const BASE_URL = process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'http://127.0.0.1:5000';
+const API_URL = `${BASE_URL}/finance`;
 /**
  * GLOBAL AXIOS CONFIGURATION
  */
