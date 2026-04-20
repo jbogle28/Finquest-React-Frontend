@@ -10,7 +10,7 @@ const Portfolio = () => {
     });
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState(null);
-    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    const [setWindowWidth] = useState(window.innerWidth);
     
     // Custom Modal State
     const [sellModal, setSellModal] = useState({ show: false, item: null });
