@@ -123,24 +123,34 @@ const CrosswordSuccess = () => {
                     </div>
                 </div>
 
-                <div style={{
-                    ...styles.buttonGroup,
-                    flexDirection: isMobile ? 'column' : 'row'
-                }}>
+            <div style={{
+                ...styles.buttonGroup,
+                flexDirection: isMobile ? 'column' : 'row'
+            }}>
+                {/* Only show "Next" button if there is a next topic */}
+                {nextTopic ? (
                     <button 
                         onClick={() => navigate(`/arcade/crossword/${nextTopic}`)} 
                         style={styles.primaryButton}
                     >
-                        Next <ChevronRight size={14} />
+                        Next Topic <ChevronRight size={14} />
                     </button>
-                    
+                ) : (
                     <button 
-                        onClick={() => navigate('/dashboard')} 
-                        style={styles.secondaryButton}
+                        onClick={() => navigate('/arcade')} 
+                        style={styles.primaryButton}
                     >
-                        <Home size={14} /> Home
+                        Back to Arcade <Trophy size={14} />
                     </button>
-                </div>
+                )}
+                
+                <button 
+                    onClick={() => navigate('/dashboard')} 
+                    style={styles.secondaryButton}
+                >
+                    <Home size={14} /> Home
+                </button>
+            </div>
             </motion.div>
         </div>
     );
