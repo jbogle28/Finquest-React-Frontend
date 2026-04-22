@@ -45,26 +45,38 @@ const Portfolio = () => {
         setSellModal({ show: true, item });
     };
 
-    const confirmLiquidation = async () => {
-        const { item } = sellModal;
-        try {
-            let result;
-            if (item.type === 'Stock') {
-                // Stocks require asset_id, action, and quantity
-                result = await financeService.tradeStock(item.asset_id, 'SELL', item.qty);
-            } else if (item.type === 'Bond') {
-                // Bonds are sold using the specific portfolio record ID
-                result = await financeService.sellBond(item.portfolio_id);
+const confirmLiquidation = async () => {
+    const { item } = sellModal;
+    
+    // Safety check: Ensure item and the necessary ID exist
+    if (!item) return;
+
+    try {
+        let result;
+        if (item.type === 'Stock') {
+            // Stocks use asset_id (the ID of the stock itself)
+            result = await financeService.tradeStock(item.asset_id, 'SELL', item.qty);
+        } else if (item.type === 'Bond') {
+            // CRITICAL: Ensure this matches the key sent by your backend (e.g., portfolio_id)
+            const bondId = item.portfolio_id || item.id; 
+            
+            if (!bondId) {
+                showToast("Error: Bond ID is missing.", 'error');
+                return;
             }
             
-            showToast(result?.msg || "Asset liquidated successfully!", 'success');
-            setSellModal({ show: false, item: null });
-            loadPortfolioData(); // Refresh data to show updated balance and holdings
-        } catch (err) {
-            const errorMsg = err.response?.data?.msg || "Transaction failed. Please try again.";
-            showToast(errorMsg, 'error');
+            result = await financeService.sellBond(bondId);
         }
-    };
+        
+        showToast(result?.msg || "Asset liquidated successfully!", 'success');
+        setSellModal({ show: false, item: null });
+        loadPortfolioData(); 
+    } catch (err) {
+        console.error("Liquidation Error:", err);
+        const errorMsg = err.response?.data?.msg || "Transaction failed.";
+        showToast(errorMsg, 'error');
+    }
+};
 
     const isDesktop = windowWidth >= 1024;
 
