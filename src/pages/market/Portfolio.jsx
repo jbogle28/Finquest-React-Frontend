@@ -143,19 +143,38 @@ const Portfolio = () => {
                                 </div>
                                 <p style={styles.assetQty}>{item.qty} {isDesktop ? 'Units' : 'Qty'}</p>
                             </div>
-
                             <div style={styles.assetBody}>
-                                <div style={styles.detailRow}>
-                                    <span>Avg Price</span>
-                                    <span>${parseFloat(item.avg_price).toFixed(2)}</span>
-                                </div>
-                                <div style={styles.detailRow}>
-                                    <span>Market</span>
-                                    <span style={{ color: item.current_price >= item.avg_price ? '#10b981' : '#f43f5e' }}>
-                                        ${parseFloat(item.current_price).toFixed(2)}
-                                    </span>
-                                </div>
+                                {item.type === 'Bond' ? (
+                                    <>
+                                        <div style={styles.detailRow}>
+                                            <span>Face Value</span>
+                                            <span>${parseFloat(item.price).toFixed(2)}</span>
+                                        </div>
+                                        <div style={styles.detailRow}>
+                                            <span>Coupon Rate</span>
+                                            <span style={{ color: '#a855f7', fontWeight: '700' }}>{item.coupon}</span>
+                                        </div>
+                                        <div style={styles.detailRow}>
+                                            <span>Risk Rating</span>
+                                            <span style={{ fontWeight: '700' }}>{item.risk}</span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div style={styles.detailRow}>
+                                            <span>Avg Price</span>
+                                            <span>${parseFloat(item.avg_price).toFixed(2)}</span>
+                                        </div>
+                                        <div style={styles.detailRow}>
+                                            <span>Market</span>
+                                            <span style={{ color: item.current_price >= item.avg_price ? '#10b981' : '#f43f5e' }}>
+                                                ${parseFloat(item.current_price).toFixed(2)}
+                                            </span>
+                                        </div>
+                                    </>
+                                )}
                             </div>
+ 
 
                             <button 
                                 onClick={() => initiateSell(item)}
