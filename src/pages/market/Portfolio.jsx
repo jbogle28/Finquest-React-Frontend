@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     TrendingUp, TrendingDown, Briefcase, Trash2, PieChart, 
-    X, AlertTriangle, CheckCircle, ChevronDown, ChevronUp 
+    X, AlertTriangle, CheckCircle, ChevronDown, ChevronUp  
 } from 'lucide-react';
 import financeService from '../../services/financeService';
 
@@ -70,6 +70,7 @@ const Portfolio = () => {
                 }
                 result = await financeService.sellBond(bondPortfolioId);
             } else if (item.type === 'Fixed Deposit') {
+                // Fixed Deposit withdrawal logic
                 result = await financeService.withdrawFD(item.fd_id);
             }
             
@@ -162,6 +163,10 @@ const Portfolio = () => {
                                                     <span style={{ color: '#a855f7', fontWeight: '700' }}>
                                                         {(parseFloat(item.interest_rate) * 100).toFixed(1)}%
                                                     </span>
+                                                </div>
+                                                <div style={styles.detailRow}>
+                                                    <span>Term</span>
+                                                    <span>{item.term || 'N/A'} Months</span>
                                                 </div>
                                             </>
                                         ) : (
@@ -289,7 +294,7 @@ const Portfolio = () => {
                                                 sellModal.item.type === 'Bond' 
                                                 ? sellModal.item.qty * sellModal.item.price 
                                                 : sellModal.item.type === 'Fixed Deposit'
-                                                ? sellModal.item.principal
+                                                ? parseFloat(sellModal.item.principal)
                                                 : sellModal.item.qty * sellModal.item.current_price
                                             ).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                                         </span>
