@@ -23,9 +23,10 @@ const Portfolio = () => {
     }, []);
 
     const loadPortfolioData = async () => {
+        setLoading(true);
         try {
-            // Using getPortfolioSummary from your financeService
-            const data = await financeService.getPortfolioSummary();
+            // Using the service to fetch full portfolio details and summary
+            const data = await financeService.getPortfolioDetails();
             setPortfolio(data);
         } catch (err) {
             console.error("Portfolio Load Error:", err);
@@ -48,20 +49,20 @@ const Portfolio = () => {
         const { item } = sellModal;
         try {
             let result;
-            // FIXED: Using asset_type as defined in your market.py / finance_routes
-            if (item.asset_type === 'Stock') {
-                result = await financeService.tradeStock(item.asset_id, 'SELL', item.quantity);
-            } else if (item.asset_type === 'Bond') {
-                // FIXED: Passing portfolio_id to match financeService.sellBond(portfolioId)
-                result = await financeService.sellBond(item.id); 
+            if (item.type === 'Stock') {
+                // Stocks require asset_id, action, and quantity
+                result = await financeService.tradeStock(item.asset_id, 'SELL', item.qty);
+            } else if (item.type === 'Bond') {
+                // Bonds are sold using the specific portfolio record ID
+                result = await financeService.sellBond(item.portfolio_id);
             }
             
-            showToast(result.msg || "Asset liquidated successfully!", 'success');
+            showToast(result?.msg || "Asset liquidated successfully!", 'success');
             setSellModal({ show: false, item: null });
-            loadPortfolioData();
+            loadPortfolioData(); // Refresh data to show updated balance and holdings
         } catch (err) {
-            console.error("Liquidation Error:", err);
-            showToast("Transaction failed. Please try again.", 'error');
+            const errorMsg = err.response?.data?.msg || "Transaction failed. Please try again.";
+            showToast(errorMsg, 'error');
         }
     };
 
@@ -107,6 +108,10 @@ const Portfolio = () => {
 
             {loading ? (
                 <p style={styles.loadingText}>Analyzing holdings...</p>
+            ) : portfolio.items.length === 0 ? (
+                <div style={styles.emptyState}>
+                    <p>No active investments found.</p>
+                </div>
             ) : (
                 <div style={{
                     ...styles.assetGrid, 
@@ -115,33 +120,28 @@ const Portfolio = () => {
                 }}>
                     {portfolio.items.map((item, idx) => (
                         <motion.div 
-                            key={idx}
+                            key={item.portfolio_id || idx}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             style={styles.assetCard}
                         >
                             <div style={styles.assetHeader}>
                                 <div>
-                                    <span style={styles.assetType}>{item.asset_type}</span>
-                                    <h3 style={{...styles.assetName, fontSize: isDesktop ? '1.2rem' : '0.9rem'}}>
-                                        {item.ticker || item.issuer_name || "Investment"}
-                                    </h3>
+                                    <span style={styles.assetType}>{item.type}</span>
+                                    <h3 style={{...styles.assetName, fontSize: isDesktop ? '1.2rem' : '0.9rem'}}>{item.ticker || item.name}</h3>
                                 </div>
-                                <p style={styles.assetQty}>{item.quantity} {isDesktop ? 'Units' : 'Qty'}</p>
+                                <p style={styles.assetQty}>{item.qty} {isDesktop ? 'Units' : 'Qty'}</p>
                             </div>
 
                             <div style={styles.assetBody}>
                                 <div style={styles.detailRow}>
                                     <span>Avg Price</span>
-                                    <span>${parseFloat(item.purchase_price).toFixed(2)}</span>
+                                    <span>${parseFloat(item.avg_price).toFixed(2)}</span>
                                 </div>
                                 <div style={styles.detailRow}>
-                                    {/* FIXED: Dynamic Cash Value Display */}
-                                    <span>Cash Value</span>
-                                    <span style={{ color: '#10b981', fontWeight: '700' }}>
-                                        ${(item.asset_type === 'Stock' 
-                                            ? (item.current_price * item.quantity) 
-                                            : item.purchase_price).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                                    <span>Market</span>
+                                    <span style={{ color: item.current_price >= item.avg_price ? '#10b981' : '#f43f5e' }}>
+                                        ${parseFloat(item.current_price).toFixed(2)}
                                     </span>
                                 </div>
                             </div>
@@ -169,13 +169,13 @@ const Portfolio = () => {
                             style={{
                                 ...styles.modalContent,
                                 width: isDesktop ? '400px' : '90%',
-                                padding: isDesktop ? '24px' : '16px'
+                                padding: isDesktop ? '24px' : '20px'
                             }}
                         >
                             <div style={styles.modalHeader}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <AlertTriangle size={18} color="#f59e0b" />
-                                    <h2 style={{...styles.modalTitle, fontSize: isDesktop ? '1.1rem' : '0.85rem'}}>Confirm Sale</h2>
+                                    <h2 style={{...styles.modalTitle, fontSize: isDesktop ? '1.1rem' : '0.95rem'}}>Confirm Sale</h2>
                                 </div>
                                 <button onClick={() => setSellModal({ show: false, item: null })} style={styles.closeBtn}>
                                     <X size={18} />
@@ -183,27 +183,25 @@ const Portfolio = () => {
                             </div>
 
                             <div style={styles.modalBody}>
-                                <p style={{...styles.modalWarning, fontSize: isDesktop ? '0.9rem' : '0.7rem'}}>
-                                    Are you sure you want to sell your position in <strong>{sellModal.item.ticker || sellModal.item.issuer_name}</strong>?
+                                <p style={{...styles.modalWarning, fontSize: isDesktop ? '0.9rem' : '0.85rem'}}>
+                                    Are you sure you want to sell your position in <strong>{sellModal.item.ticker || sellModal.item.name}</strong>?
                                 </p>
                                 
-                                <div style={{...styles.saleSummary, padding: isDesktop ? '16px' : '10px'}}>
+                                <div style={{...styles.saleSummary, padding: isDesktop ? '16px' : '12px'}}>
                                     <div style={styles.orderDetail}>
-                                        <span style={styles.orderLabel}>Units</span>
-                                        <span style={styles.orderValue}>{sellModal.item.quantity}</span>
+                                        <span style={styles.orderLabel}>Units to Sell</span>
+                                        <span style={styles.orderValue}>{sellModal.item.qty}</span>
                                     </div>
                                     <div style={styles.totalBox}>
                                         <span style={styles.totalLabel}>Estimated Payout</span>
-                                        <span style={{...styles.totalValue, fontSize: isDesktop ? '1.4rem' : '1.1rem'}}>
-                                            ${(sellModal.item.asset_type === 'Stock' 
-                                                ? (sellModal.item.quantity * sellModal.item.current_price) 
-                                                : sellModal.item.purchase_price).toFixed(2)}
+                                        <span style={{...styles.totalValue, fontSize: isDesktop ? '1.4rem' : '1.2rem'}}>
+                                            ${(sellModal.item.qty * sellModal.item.current_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                                         </span>
                                     </div>
                                 </div>
                             </div>
 
-                            <button onClick={confirmLiquidation} style={{...styles.confirmBtn, fontSize: isDesktop ? '0.9rem' : '0.75rem'}}>
+                            <button onClick={confirmLiquidation} style={{...styles.confirmBtn, fontSize: isDesktop ? '0.9rem' : '0.85rem'}}>
                                 Confirm Liquidation
                             </button>
                         </motion.div>
@@ -253,6 +251,9 @@ const styles = {
     detailRow: { display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '6px' },
     sellBtn: { width: '100%', padding: '12px', background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.2)', color: '#fb7185', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', transition: 'all 0.2s', marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
     loadingText: { color: '#64748b', textAlign: 'center', marginTop: '40px' },
+    emptyState: { textAlign: 'center', color: '#64748b', padding: '40px', background: 'rgba(30, 41, 59, 0.3)', borderRadius: '18px' },
+    
+    // Modal Styles
     modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10000, backdropFilter: 'blur(4px)' },
     modalContent: { background: '#1e293b', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', boxSizing: 'border-box' },
     modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
@@ -268,6 +269,7 @@ const styles = {
     totalLabel: { fontSize: '0.65rem', color: '#f43f5e', fontWeight: '800', textTransform: 'uppercase' },
     totalValue: { fontWeight: '900', color: 'white' },
     confirmBtn: { width: '100%', marginTop: '16px', padding: '14px', borderRadius: '12px', background: '#f43f5e', color: 'white', border: 'none', fontWeight: '800', cursor: 'pointer' },
+    
     toast: { position: 'fixed', bottom: '40px', right: '40px', background: '#1e293b', padding: '16px 24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', zIndex: 10001, fontWeight: '700' }
 };
 
