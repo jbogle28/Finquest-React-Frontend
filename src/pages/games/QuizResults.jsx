@@ -156,7 +156,7 @@ const QuizResults = () => {
                                 fontSize: isMobile ? '14px' : '16px'
                             }}
                         >
-                            Review Review <ChevronRight size={isMobile ? 18 : 20} />
+                            Review <ChevronRight size={isMobile ? 18 : 20} />
                         </motion.button>
                     )}
                 </div>
