@@ -66,12 +66,36 @@ const Crossword = () => {
     const isMobile = dimensions.width < 1024;
     const currentTopic = topic ? (TOPIC_MAP[topic] || topic) : TOPIC_SEQUENCE[0];
 
+    const TOPIC_SEQUENCE = Object.keys(TOPIC_MAP); // ["Budgeting", "Banking", "Credit", "Retirement", "Taxes"]
+
     const handleFinish = useCallback(async () => {
         try {
-            await gameService.submitCrossword({ topic: currentTopic, time_taken: 0, xp_reward: 150 });
-            navigate('/crossword-success', { state: { xpEarned: 150, topic: currentTopic } });
-        } catch (err) { console.error("Error saving progress:", err); }
-    }, [currentTopic, navigate]);
+            // Find the current key (e.g., "Budgeting") based on the currentTopic value
+            const currentKey = Object.keys(TOPIC_MAP).find(key => TOPIC_MAP[key] === currentTopic) || topic;
+            const currentIndex = TOPIC_SEQUENCE.indexOf(currentKey);
+            
+            // Determine the next key, or null if it's the last one
+            const nextTopicKey = currentIndex !== -1 && currentIndex < TOPIC_SEQUENCE.length - 1 
+                ? TOPIC_SEQUENCE[currentIndex + 1] 
+                : null;
+    
+            await gameService.submitCrossword({ 
+                topic: currentTopic, 
+                time_taken: 0, 
+                xp_reward: 150 
+            });
+    
+            navigate('/crossword-success', { 
+                state: { 
+                    xpEarned: 150, 
+                    topic: currentTopic,
+                    nextTopic: nextTopicKey // Pass the key for the URL
+                } 
+            });
+        } catch (err) { 
+            console.error("Error saving progress:", err); 
+        }
+    }, [currentTopic, navigate, topic]);
 
     const checkWordCompletion = useCallback((currentGrid, data) => {
         if (!data) return;
