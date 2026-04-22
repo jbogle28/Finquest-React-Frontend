@@ -7,7 +7,7 @@ import Confetti from 'react-confetti';
 const CrosswordSuccess = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { xpEarned = 150, coinsEarned = 50, nextTopic = "Investing" } = location.state || {};
+    const { xpEarned = 150, coinsEarned = 50, nextTopic } = location.state || {};
 
     const [xp, setXp] = useState(0);
     const [coins, setCoins] = useState(0);
