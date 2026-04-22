@@ -45,38 +45,37 @@ const Portfolio = () => {
         setSellModal({ show: true, item });
     };
 
-const confirmLiquidation = async () => {
-    const { item } = sellModal;
+    const confirmLiquidation = async () => {
+        const { item } = sellModal;
+        if (!item) return;
     
-    // Safety check: Ensure item and the necessary ID exist
-    if (!item) return;
-
-    try {
-        let result;
-        if (item.type === 'Stock') {
-            // Stocks use asset_id (the ID of the stock itself)
-            result = await financeService.tradeStock(item.asset_id, 'SELL', item.qty);
-        } else if (item.type === 'Bond') {
-            // CRITICAL: Ensure this matches the key sent by your backend (e.g., portfolio_id)
-            const bondId = item.portfolio_id || item.id; 
-            
-            if (!bondId) {
-                showToast("Error: Bond ID is missing.", 'error');
-                return;
+        try {
+            let result;
+            if (item.type === 'Stock') {
+                // Stocks use asset_id
+                result = await financeService.tradeStock(item.asset_id, 'SELL', item.qty);
+            } else if (item.type === 'Bond') {
+                // BACKEND CHECK: Your backend sends "id": h.portfolio_id
+                const bondPortfolioId = item.id; 
+                
+                if (!bondPortfolioId) {
+                    console.error("Bond ID is missing from item:", item);
+                    showToast("Error: Missing Bond ID.", 'error');
+                    return;
+                }
+    
+                result = await financeService.sellBond(bondPortfolioId);
             }
             
-            result = await financeService.sellBond(bondId);
+            showToast(result?.msg || "Asset liquidated successfully!", 'success');
+            setSellModal({ show: false, item: null });
+            loadPortfolioData(); 
+        } catch (err) {
+            console.error("Liquidation Error:", err);
+            const errorMsg = err.response?.data?.msg || "Transaction failed. Please try again.";
+            showToast(errorMsg, 'error');
         }
-        
-        showToast(result?.msg || "Asset liquidated successfully!", 'success');
-        setSellModal({ show: false, item: null });
-        loadPortfolioData(); 
-    } catch (err) {
-        console.error("Liquidation Error:", err);
-        const errorMsg = err.response?.data?.msg || "Transaction failed.";
-        showToast(errorMsg, 'error');
-    }
-};
+    };
 
     const isDesktop = windowWidth >= 1024;
 
