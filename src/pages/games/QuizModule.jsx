@@ -45,7 +45,7 @@ const QuizModule = ({ user }) => {
             setHistorySnapshot([]);
 
             try {
-                const difficulty = currentTopic.id <= 4 ? 1 : 2; 
+                const difficulty = currentTopic.id <= 4 ? 1 : 1; 
                 const data = await quizService.getQuestions(currentTopic.title, difficulty);
                 setQuestions(data);
                 setLoading(false);
