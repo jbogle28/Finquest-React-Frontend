@@ -63,7 +63,7 @@ const Portfolio = () => {
             if (item.type === 'Stock') {
                 result = await financeService.tradeStock(item.asset_id, 'SELL', item.qty);
             } else if (item.type === 'Bond') {
-                const bondPortfolioId = item.id; 
+                const bondPortfolioId = item.portfolio_id; 
                 if (!bondPortfolioId) {
                     showToast("Error: Missing Bond ID.", 'error');
                     return;
