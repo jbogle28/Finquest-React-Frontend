@@ -54,6 +54,23 @@ const financeService = {
         }
     },
 
+    sellBond: async (portfolioId) => {
+        LoadingManager.start();
+        try {
+            // Using POST to match backend route structure
+            const response = await axios.post(`${API_URL}/bonds/sell/${portfolioId}`, 
+                {}, 
+                { headers: getAuthHeader() }
+            );
+            return response.data;
+        } catch (error) {
+            console.error("Bond Liquidation Error:", error.response?.data);
+            throw error;
+        } finally {
+            LoadingManager.stop();
+        }
+    },
+
     // --- STOCK MARKET ---
     getStockMarket: async () => {
         const response = await axios.get(`${API_URL}/stocks/market`, { headers: getAuthHeader() });
