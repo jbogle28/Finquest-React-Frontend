@@ -225,7 +225,11 @@ const Portfolio = () => {
                                     <div style={styles.totalBox}>
                                         <span style={styles.totalLabel}>Estimated Payout</span>
                                         <span style={{...styles.totalValue, fontSize: isDesktop ? '1.4rem' : '1.2rem'}}>
-                                            ${(sellModal.item.qty * sellModal.item.current_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                            ${(
+                                                sellModal.item.type === 'Bond' 
+                                                ? sellModal.item.qty * sellModal.item.price 
+                                                : sellModal.item.qty * sellModal.item.current_price
+                                            ).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                                         </span>
                                     </div>
                                 </div>
