@@ -24,6 +24,7 @@ const Portfolio = () => {
 
     const loadPortfolioData = async () => {
         try {
+            // Using getPortfolioSummary from your financeService
             const data = await financeService.getPortfolioSummary();
             setPortfolio(data);
         } catch (err) {
@@ -47,16 +48,19 @@ const Portfolio = () => {
         const { item } = sellModal;
         try {
             let result;
-            if (item.type === 'Stock') {
-                result = await financeService.tradeStock(item.asset_id, 'SELL', item.qty);
-            } else {
-                result = await financeService.sellBond(item.portfolio_id);
+            // FIXED: Using asset_type as defined in your market.py / finance_routes
+            if (item.asset_type === 'Stock') {
+                result = await financeService.tradeStock(item.asset_id, 'SELL', item.quantity);
+            } else if (item.asset_type === 'Bond') {
+                // FIXED: Passing portfolio_id to match financeService.sellBond(portfolioId)
+                result = await financeService.sellBond(item.id); 
             }
             
             showToast(result.msg || "Asset liquidated successfully!", 'success');
             setSellModal({ show: false, item: null });
             loadPortfolioData();
         } catch (err) {
+            console.error("Liquidation Error:", err);
             showToast("Transaction failed. Please try again.", 'error');
         }
     };
@@ -76,7 +80,7 @@ const Portfolio = () => {
             <div style={{...styles.summaryGrid, gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr'}}>
                 <div style={styles.sumCard}>
                     <span style={styles.sumLabel}>Total Market Value</span>
-                    <span style={styles.sumValue}>${portfolio.summary.market_value?.toLocaleString()}</span>
+                    <span style={styles.sumValue}>${portfolio.summary.market_value?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
                 <div style={styles.sumCard}>
                     <span style={styles.sumLabel}>Net Position</span>
@@ -85,14 +89,14 @@ const Portfolio = () => {
                             ...styles.sumValue, 
                             color: portfolio.summary.net_position >= 0 ? '#10b981' : '#f43f5e' 
                         }}>
-                            {portfolio.summary.net_position >= 0 ? '+' : ''}${portfolio.summary.net_position?.toLocaleString()}
+                            {portfolio.summary.net_position >= 0 ? '+' : ''}${portfolio.summary.net_position?.toLocaleString(undefined, {minimumFractionDigits: 2})}
                         </span>
                         {portfolio.summary.net_position >= 0 ? <TrendingUp color="#10b981" size={20}/> : <TrendingDown color="#f43f5e" size={20}/>}
                     </div>
                 </div>
                 <div style={styles.sumCard}>
                     <span style={styles.sumLabel}>Invested Capital</span>
-                    <span style={styles.sumValue}>${portfolio.summary.total_invested?.toLocaleString()}</span>
+                    <span style={styles.sumValue}>${portfolio.summary.total_invested?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
             </div>
 
@@ -118,21 +122,26 @@ const Portfolio = () => {
                         >
                             <div style={styles.assetHeader}>
                                 <div>
-                                    <span style={styles.assetType}>{item.type}</span>
-                                    <h3 style={{...styles.assetName, fontSize: isDesktop ? '1.2rem' : '0.9rem'}}>{item.ticker || item.name}</h3>
+                                    <span style={styles.assetType}>{item.asset_type}</span>
+                                    <h3 style={{...styles.assetName, fontSize: isDesktop ? '1.2rem' : '0.9rem'}}>
+                                        {item.ticker || item.issuer_name || "Investment"}
+                                    </h3>
                                 </div>
-                                <p style={styles.assetQty}>{item.qty} {isDesktop ? 'Units' : 'Qty'}</p>
+                                <p style={styles.assetQty}>{item.quantity} {isDesktop ? 'Units' : 'Qty'}</p>
                             </div>
 
                             <div style={styles.assetBody}>
                                 <div style={styles.detailRow}>
                                     <span>Avg Price</span>
-                                    <span>${item.avg_price}</span>
+                                    <span>${parseFloat(item.purchase_price).toFixed(2)}</span>
                                 </div>
                                 <div style={styles.detailRow}>
-                                    <span>Market</span>
-                                    <span style={{ color: item.current_price >= item.avg_price ? '#10b981' : '#f43f5e' }}>
-                                        ${item.current_price}
+                                    {/* FIXED: Dynamic Cash Value Display */}
+                                    <span>Cash Value</span>
+                                    <span style={{ color: '#10b981', fontWeight: '700' }}>
+                                        ${(item.asset_type === 'Stock' 
+                                            ? (item.current_price * item.quantity) 
+                                            : item.purchase_price).toLocaleString(undefined, {minimumFractionDigits: 2})}
                                     </span>
                                 </div>
                             </div>
@@ -159,8 +168,7 @@ const Portfolio = () => {
                             exit={{ scale: 0.9, opacity: 0 }}
                             style={{
                                 ...styles.modalContent,
-                                width: isDesktop ? '400px' : 'calc(50% - 15px)',
-                                minWidth: isDesktop ? '400px' : '160px',
+                                width: isDesktop ? '400px' : '90%',
                                 padding: isDesktop ? '24px' : '16px'
                             }}
                         >
@@ -176,18 +184,20 @@ const Portfolio = () => {
 
                             <div style={styles.modalBody}>
                                 <p style={{...styles.modalWarning, fontSize: isDesktop ? '0.9rem' : '0.7rem'}}>
-                                    Are you sure you want to sell your position in <strong>{sellModal.item.ticker || sellModal.item.name}</strong>?
+                                    Are you sure you want to sell your position in <strong>{sellModal.item.ticker || sellModal.item.issuer_name}</strong>?
                                 </p>
                                 
                                 <div style={{...styles.saleSummary, padding: isDesktop ? '16px' : '10px'}}>
                                     <div style={styles.orderDetail}>
                                         <span style={styles.orderLabel}>Units</span>
-                                        <span style={styles.orderValue}>{sellModal.item.qty}</span>
+                                        <span style={styles.orderValue}>{sellModal.item.quantity}</span>
                                     </div>
                                     <div style={styles.totalBox}>
                                         <span style={styles.totalLabel}>Estimated Payout</span>
                                         <span style={{...styles.totalValue, fontSize: isDesktop ? '1.4rem' : '1.1rem'}}>
-                                            ${(sellModal.item.qty * sellModal.item.current_price).toFixed(2)}
+                                            ${(sellModal.item.asset_type === 'Stock' 
+                                                ? (sellModal.item.quantity * sellModal.item.current_price) 
+                                                : sellModal.item.purchase_price).toFixed(2)}
                                         </span>
                                     </div>
                                 </div>
@@ -243,8 +253,6 @@ const styles = {
     detailRow: { display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '6px' },
     sellBtn: { width: '100%', padding: '12px', background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.2)', color: '#fb7185', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', transition: 'all 0.2s', marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
     loadingText: { color: '#64748b', textAlign: 'center', marginTop: '40px' },
-    
-    // Modal Styles
     modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10000, backdropFilter: 'blur(4px)' },
     modalContent: { background: '#1e293b', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', boxSizing: 'border-box' },
     modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
@@ -260,7 +268,6 @@ const styles = {
     totalLabel: { fontSize: '0.65rem', color: '#f43f5e', fontWeight: '800', textTransform: 'uppercase' },
     totalValue: { fontWeight: '900', color: 'white' },
     confirmBtn: { width: '100%', marginTop: '16px', padding: '14px', borderRadius: '12px', background: '#f43f5e', color: 'white', border: 'none', fontWeight: '800', cursor: 'pointer' },
-    
     toast: { position: 'fixed', bottom: '40px', right: '40px', background: '#1e293b', padding: '16px 24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', zIndex: 10001, fontWeight: '700' }
 };
 
