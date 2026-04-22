@@ -97,10 +97,14 @@ const Crossword = () => {
     }, [handleFinish]);
 
     const moveFocus = (r, c, dir) => {
-        const nextR = dir === 'across' ? r : r + 1;
+        // Increment row only if going 'down', increment col only if going 'across'
+        const nextR = dir === 'down' ? r + 1 : r;
         const nextC = dir === 'across' ? c + 1 : c;
+        
         const nextKey = `${nextR}-${nextC}`;
-        if (inputRefs.current[nextKey]) inputRefs.current[nextKey].focus();
+        if (inputRefs.current[nextKey]) {
+            inputRefs.current[nextKey].focus();
+        }
     };
 
     const handleInput = (row, col, value) => {
@@ -115,12 +119,19 @@ const Crossword = () => {
 
     const handleKeyDown = (e, r, c) => {
         if (e.key === 'Backspace' && !userGrid[`${r}-${c}`]) {
-            const prevR = direction === 'across' ? r : r - 1;
+            // Jump back based on current direction
+            const prevR = direction === 'down' ? r - 1 : r;
             const prevC = direction === 'across' ? c - 1 : c;
+            
             const prevKey = `${prevR}-${prevC}`;
-            if (inputRefs.current[prevKey]) inputRefs.current[prevKey].focus();
-        } else if (e.key === 'ArrowRight') setDirection('across');
-        else if (e.key === 'ArrowDown') setDirection('down');
+            if (inputRefs.current[prevKey]) {
+                inputRefs.current[prevKey].focus();
+            }
+        } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+            setDirection('across');
+        } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            setDirection('down');
+        }
     };
 
     useEffect(() => {
