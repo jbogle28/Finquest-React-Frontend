@@ -108,32 +108,46 @@ const Crossword = () => {
     };
 
     const handleInput = (row, col, value) => {
+        // Only take the last character typed
         const char = value.slice(-1).toUpperCase();
+        
+        // Validation: Only allow A-Z
         if (char && !/[A-Z]/.test(char)) return; 
+    
         const key = `${row}-${col}`;
         const newUserGrid = { ...userGrid, [key]: char };
         setUserGrid(newUserGrid);
-        if (char !== "") moveFocus(row, col, direction);
+    
+        // AUTO-MOVE LOGIC:
+        // If the user typed a letter (not deleting), move the focus
+        if (char !== "") {
+            moveFocus(row, col, direction);
+        }
+        
         checkWordCompletion(newUserGrid, gridData);
     };
 
     const handleKeyDown = (e, r, c) => {
-        if (e.key === 'Backspace' && !userGrid[`${r}-${c}`]) {
-            // Jump back based on current direction
-            const prevR = direction === 'down' ? r - 1 : r;
-            const prevC = direction === 'across' ? c - 1 : c;
-            
-            const prevKey = `${prevR}-${prevC}`;
-            if (inputRefs.current[prevKey]) {
-                inputRefs.current[prevKey].focus();
+        if (e.key === 'Backspace') {
+            // If the current cell is empty, jump to the previous one
+            if (!userGrid[`${r}-${c}`]) {
+                const prevR = direction === 'down' ? r - 1 : r;
+                const prevC = direction === 'across' ? c - 1 : c;
+                const prevKey = `${prevR}-${prevC}`;
+                
+                if (inputRefs.current[prevKey]) {
+                    inputRefs.current[prevKey].focus();
+                }
             }
-        } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        } 
+        // Allow manual direction switching with arrows
+        else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
             setDirection('across');
         } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
             setDirection('down');
         }
     };
-
+    
     useEffect(() => {
         const loadPuzzle = async () => {
             try {
