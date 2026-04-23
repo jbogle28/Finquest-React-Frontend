@@ -21,11 +21,21 @@ const Portfolio = () => {
     // Custom Modal State
     const [sellModal, setSellModal] = useState({ show: false, item: null });
 
+    // 1. Initial Load and Resize Listener
     useEffect(() => {
         const handleResize = () => setWindowWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
         loadPortfolioData();
         return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // 2. Real-time update for the countdown (updates every 60 seconds)
+    useEffect(() => {
+        const timer = setInterval(() => {
+            // This triggers a shallow update to force the UI to recalculate getMinutesLeft
+            setPortfolio(prev => ({ ...prev }));
+        }, 60000);
+        return () => clearInterval(timer);
     }, []);
 
     const loadPortfolioData = async () => {
@@ -136,8 +146,9 @@ const Portfolio = () => {
                             padding: '10px 0 25px 0'
                         }}>
                             {items.map((item, idx) => {
-                                const maturityField = item.maturity_date || item.end_time;
-                                const timeLeft = item.type === 'Fixed Deposit' ? getMinutesLeft(item.maturity_date) : null;
+                                // FIX: check both maturity_date and end_time
+                                const maturityValue = item.maturity_date || item.end_time;
+                                const timeLeft = item.type === 'Fixed Deposit' ? getMinutesLeft(maturityValue) : null;
                                 const isMatured = timeLeft !== null && timeLeft <= 0;
 
                                 return (
@@ -227,7 +238,7 @@ const Portfolio = () => {
                         </div>
                     </motion.div>
                 )}
-            </AnimatePresence>
+            </AnPresence>
         </div>
     );
 
