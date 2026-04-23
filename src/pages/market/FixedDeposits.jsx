@@ -9,14 +9,16 @@ import financeService from '../../services/financeService';
 const FixedDeposits = () => {
     const [marketFDs, setMarketFDs] = useState([]);
     const [activeFDs, setActiveFDs] = useState([]);
-   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-   
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    
+    // Real-time ticker state
+    const [currentTime, setCurrentTime] = useState(new Date());
+    
     // Modals
     const [purchaseModal, setPurchaseModal] = useState({ show: false, fd: null });
     const [withdrawModal, setWithdrawModal] = useState({ show: false, fd: null });
     const [amount, setAmount] = useState('');
     const [status, setStatus] = useState(null);
-
 
     const loadData = useCallback(async () => {
         try {
@@ -31,12 +33,20 @@ const FixedDeposits = () => {
         }
     }, []);
 
+    // Ticker Effect: Forces re-render every second to update "isMatured" status
+    useEffect(() => {
+        const ticker = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+
+        return () => clearInterval(ticker);
+    }, []);
 
     useEffect(() => {
         const handleResize = () => setWindowWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
         
-        loadData(); // This is now safe to call
+        loadData(); 
         
         return () => window.removeEventListener('resize', handleResize);
     }, [loadData]);
@@ -45,7 +55,6 @@ const FixedDeposits = () => {
     const handleCreate = async () => {
         if (!amount || amount <= 0 || !purchaseModal.fd) return;
         try {
-            // FIX: Swapped arguments to match service signature (amount, marketId)
             await financeService.createFD(parseFloat(amount), purchaseModal.fd.id);
             
             setStatus({ type: 'success', msg: "Investment locked successfully!" });
@@ -83,12 +92,12 @@ const FixedDeposits = () => {
                     <h2 style={styles.sectionLabel}>Your Active Deposits</h2>
                     <div style={styles.grid}>
                         {activeFDs.map(fd => {
-                            const isMatured = new Date() >= new Date(fd.end_time);
+                            // Uses currentTime from state to trigger UI updates automatically
+                            const isMatured = currentTime >= new Date(fd.end_time);
                             return (
                                 <motion.div key={fd.id} style={styles.activeCard} layout>
                                     <div style={styles.activeTop}>
                                         <Building2 size={18} color="#a855f7" />
-                                        {/* FIX: Changed institution_name to institution to match backend JSON */}
                                         <span style={styles.activeInst}>{fd.institution}</span>
                                         <div style={{
                                             ...styles.statusBadge,
@@ -157,7 +166,7 @@ const FixedDeposits = () => {
                 ))}
             </div>
 
-            {/* --- CUSTOM PURCHASE MODAL --- */}
+            {/* --- PURCHASE MODAL --- */}
             <AnimatePresence>
                 {purchaseModal.show && (
                     <div style={styles.modalOverlay}>
@@ -205,7 +214,7 @@ const FixedDeposits = () => {
                 )}
             </AnimatePresence>
 
-            {/* --- CUSTOM WITHDRAWAL MODAL --- */}
+            {/* --- WITHDRAWAL MODAL --- */}
             <AnimatePresence>
                 {withdrawModal.show && (
                     <div style={styles.modalOverlay}>
@@ -213,7 +222,7 @@ const FixedDeposits = () => {
                             <AlertTriangle size={32} color="#f43f5e" style={{ marginBottom: '15px' }} />
                             <h3 style={styles.modalTitle}>Confirm Action</h3>
                             <p style={styles.warningText}>
-                                {new Date() < new Date(withdrawModal.fd.end_time) 
+                                {currentTime < new Date(withdrawModal.fd.end_time) 
                                     ? "This deposit is still locked. Early withdrawal will result in a 10% penalty on your principal."
                                     : "Your investment has matured! Ready to claim your returns?"}
                             </p>
@@ -241,7 +250,6 @@ const FixedDeposits = () => {
     );
 };
 
-// ... Styles remain unchanged ...
 const styles = {
     container: { padding: '40px 20px', maxWidth: '1200px', margin: '0 auto' },
     headerSection: { marginBottom: '40px' },
