@@ -120,30 +120,56 @@ const Crossword = () => {
         if (newlyCompleted.length === totalWords && totalWords > 0) handleFinish();
     }, [handleFinish]);
 
-    const moveFocus = (r, c, dir) => {
-        // Increment row only if going 'down', increment col only if going 'across'
-        const nextR = dir === 'down' ? r + 1 : r;
-        const nextC = dir === 'across' ? c + 1 : c;
+     const moveFocus = (r, c, dir) => {
+        const wordIds = findCellData(gridData, r, c).wordIds;
+        // Find the ID of the word currently being typed based on the active direction
+        const activeWordId = wordIds.find(id => id.startsWith(dir));
         
-        const nextKey = `${nextR}-${nextC}`;
-        if (inputRefs.current[nextKey]) {
-            inputRefs.current[nextKey].focus();
+        if (!activeWordId) return;
+    
+        const [direction, id] = activeWordId.split('-');
+        const item = gridData[direction][id];
+        
+        // Scan through the word to find the next empty cell
+        for (let i = 0; i < item.word.length; i++) {
+            const cellR = direction === 'across' ? item.y : item.y + i;
+            const cellC = direction === 'across' ? item.x + i : item.x;
+            
+            // We only care about cells AFTER the current one
+            const isAfterCurrent = direction === 'across' ? cellC > c : cellR > r;
+    
+            if (isAfterCurrent) {
+                const nextKey = `${cellR}-${cellC}`;
+                // If this cell is empty, jump to it and STOP
+                if (!userGrid[nextKey]) {
+                    if (inputRefs.current[nextKey]) {
+                        inputRefs.current[nextKey].focus();
+                        return; 
+                    }
+                }
+            }
+        }
+        
+        // Optional: If no empty cells are found ahead, try to jump to the very next cell anyway
+        const backupR = direction === 'down' ? r + 1 : r;
+        const backupC = direction === 'across' ? c + 1 : c;
+        const backupKey = `${backupR}-${backupC}`;
+        if (inputRefs.current[backupKey]) {
+            inputRefs.current[backupKey].focus();
         }
     };
 
     const handleInput = (row, col, value) => {
-        // Only take the last character typed
+        // Get the last char to allow overwriting
         const char = value.slice(-1).toUpperCase();
         
-        // Validation: Only allow A-Z
         if (char && !/[A-Z]/.test(char)) return; 
     
         const key = `${row}-${col}`;
         const newUserGrid = { ...userGrid, [key]: char };
         setUserGrid(newUserGrid);
     
-        // AUTO-MOVE LOGIC:
-        // If the user typed a letter (not deleting), move the focus
+        // Only jump if we actually typed something
         if (char !== "") {
             moveFocus(row, col, direction);
         }
@@ -153,23 +179,20 @@ const Crossword = () => {
 
     const handleKeyDown = (e, r, c) => {
         if (e.key === 'Backspace') {
-            // If the current cell is empty, jump to the previous one
             if (!userGrid[`${r}-${c}`]) {
                 const prevR = direction === 'down' ? r - 1 : r;
                 const prevC = direction === 'across' ? c - 1 : c;
                 const prevKey = `${prevR}-${prevC}`;
-                
                 if (inputRefs.current[prevKey]) {
                     inputRefs.current[prevKey].focus();
                 }
             }
         } 
-        // Allow manual direction switching with arrows
-        else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-            setDirection('across');
-        } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-            setDirection('down');
-        }
+        // Manual arrow navigation without forced direction switching
+        else if (e.key === 'ArrowRight') inputRefs.current[`${r}-${c+1}`]?.focus();
+        else if (e.key === 'ArrowLeft') inputRefs.current[`${r}-${c-1}`]?.focus();
+        else if (e.key === 'ArrowUp') inputRefs.current[`${r-1}-${c}`]?.focus();
+        else if (e.key === 'ArrowDown') inputRefs.current[`${r+1}-${c}`]?.focus();
     };
     
     useEffect(() => {
@@ -215,13 +238,6 @@ const Crossword = () => {
                         <span style={{ fontSize: isMobile ? '9px' : '12px' }}>{completedWords.length} Solved</span>
                     </div>
                 </div>
-                <div 
-                    style={currentStyles.directionToggle} 
-                    onClick={() => setDirection(direction === 'across' ? 'down' : 'across')}
-                >
-                    <span style={currentStyles.dirText}>{direction}</span>
-                    <ChevronRight size={isMobile ? 10 : 14} style={{ transform: direction === 'down' ? 'rotate(90deg)' : 'none' }}/>
-                </div>
             </header>
 
             <div style={{
@@ -262,11 +278,12 @@ const Crossword = () => {
                                                 borderColor: isFocused ? '#a855f7' : isFinished ? '#059669' : '#334155',
                                                 color: isFinished ? '#34d399' : 'white'
                                             }}
-                                            maxLength={1}
+                                            // REMOVED maxLength={1} here to allow the overwrite logic to work
                                             inputMode="text"
                                             value={userGrid[`${r}-${c}`] || ''}
                                             onChange={(e) => handleInput(r, c, e.target.value)}
                                         />
+
                                     </div>
                                 );
                             })
