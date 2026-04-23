@@ -159,21 +159,41 @@ const Crossword = () => {
         }
     };
 
-    const handleInput = (row, col, value) => {
-        // Get the last char to allow overwriting
+     const handleInput = (row, col, value) => {
         const char = value.slice(-1).toUpperCase();
-        
-        if (char && !/[A-Z]/.test(char)) return; 
+        if (char && !/[A-Z]/.test(char)) return;
     
         const key = `${row}-${col}`;
         const newUserGrid = { ...userGrid, [key]: char };
         setUserGrid(newUserGrid);
     
-        // Only jump if we actually typed something
         if (char !== "") {
-            moveFocus(row, col, direction);
+            // 1. Get all words this cell belongs to
+            const { wordIds } = findCellData(gridData, row, col);
+            
+            // 2. Determine which direction to jump
+            // If the cell belongs to both, find the one that isn't finished yet
+            let jumpDir = 'across'; 
+            
+            const hasAcross = wordIds.some(id => id.startsWith('across'));
+            const hasDown = wordIds.some(id => id.startsWith('down'));
+    
+            if (hasAcross && hasDown) {
+                // Check if 'across' is already full. If so, jump 'down'.
+                const acrossId = wordIds.find(id => id.startsWith('across'));
+                const isAcrossFinished = completedWords.includes(acrossId);
+                jumpDir = isAcrossFinished ? 'down' : 'across';
+            } else if (hasDown) {
+                jumpDir = 'down';
+            }
+    
+            // 3. Update the state so moveFocus knows which way we are headed
+            setDirection(jumpDir);
+            
+            // 4. Execute the jump
+            moveFocus(row, col, jumpDir);
         }
-        
+    
         checkWordCompletion(newUserGrid, gridData);
     };
 
