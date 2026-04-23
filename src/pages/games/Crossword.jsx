@@ -120,46 +120,48 @@ const Crossword = () => {
         if (newlyCompleted.length === totalWords && totalWords > 0) handleFinish();
     }, [handleFinish]);
 
-     const moveFocus = (r, c, dir) => {
-        const wordIds = findCellData(gridData, r, c).wordIds;
-        // Find the ID of the word currently being typed based on the active direction
-        const activeWordId = wordIds.find(id => id.startsWith(dir));
+     const moveFocus = (r, c) => {
+        const { wordIds } = findCellData(gridData, r, c);
         
-        if (!activeWordId) return;
-    
-        const [direction, id] = activeWordId.split('-');
-        const item = gridData[direction][id];
-        
-        // Scan through the word to find the next empty cell
-        for (let i = 0; i < item.word.length; i++) {
-            const cellR = direction === 'across' ? item.y : item.y + i;
-            const cellC = direction === 'across' ? item.x + i : item.x;
+        // Helper to find the next empty cell in a specific word
+        const findEmptyInWord = (wordId) => {
+            const [dir, id] = wordId.split('-');
+            const item = gridData[dir][id];
             
-            // We only care about cells AFTER the current one
-            const isAfterCurrent = direction === 'across' ? cellC > c : cellR > r;
-    
-            if (isAfterCurrent) {
-                const nextKey = `${cellR}-${cellC}`;
-                // If this cell is empty, jump to it and STOP
-                if (!userGrid[nextKey]) {
-                    if (inputRefs.current[nextKey]) {
-                        inputRefs.current[nextKey].focus();
-                        return; 
-                    }
+            for (let i = 0; i < item.word.length; i++) {
+                const cellR = dir === 'across' ? item.y : item.y + i;
+                const cellC = dir === 'across' ? item.x + i : item.x;
+                
+                // Only look at cells AFTER the current one
+                const isAfter = dir === 'across' ? cellC > c : cellR > r;
+                const key = `${cellR}-${cellC}`;
+                
+                if (isAfter && !userGrid[key]) {
+                    return key;
                 }
             }
+            return null;
+        };
+    
+        // 1. Try to find an empty cell in the "Across" word first
+        const acrossId = wordIds.find(id => id.startsWith('across'));
+        let nextKey = acrossId ? findEmptyInWord(acrossId) : null;
+    
+        // 2. If no across hole found, try the "Down" word
+        if (!nextKey) {
+            const downId = wordIds.find(id => id.startsWith('down'));
+            nextKey = downId ? findEmptyInWord(downId) : null;
         }
-        
-        // Optional: If no empty cells are found ahead, try to jump to the very next cell anyway
-        const backupR = direction === 'down' ? r + 1 : r;
-        const backupC = direction === 'across' ? c + 1 : c;
-        const backupKey = `${backupR}-${backupC}`;
-        if (inputRefs.current[backupKey]) {
-            inputRefs.current[backupKey].focus();
+    
+        // 3. Jump if we found a hole
+        if (nextKey && inputRefs.current[nextKey]) {
+            // Update direction state so Backspace knows which way to go back
+            setDirection(nextKey.split('-')[0] === r.toString() ? 'across' : 'down');
+            inputRefs.current[nextKey].focus();
         }
     };
-
-     const handleInput = (row, col, value) => {
+    
+    const handleInput = (row, col, value) => {
         const char = value.slice(-1).toUpperCase();
         if (char && !/[A-Z]/.test(char)) return;
     
@@ -168,30 +170,7 @@ const Crossword = () => {
         setUserGrid(newUserGrid);
     
         if (char !== "") {
-            // 1. Get all words this cell belongs to
-            const { wordIds } = findCellData(gridData, row, col);
-            
-            // 2. Determine which direction to jump
-            // If the cell belongs to both, find the one that isn't finished yet
-            let jumpDir = 'across'; 
-            
-            const hasAcross = wordIds.some(id => id.startsWith('across'));
-            const hasDown = wordIds.some(id => id.startsWith('down'));
-    
-            if (hasAcross && hasDown) {
-                // Check if 'across' is already full. If so, jump 'down'.
-                const acrossId = wordIds.find(id => id.startsWith('across'));
-                const isAcrossFinished = completedWords.includes(acrossId);
-                jumpDir = isAcrossFinished ? 'down' : 'across';
-            } else if (hasDown) {
-                jumpDir = 'down';
-            }
-    
-            // 3. Update the state so moveFocus knows which way we are headed
-            setDirection(jumpDir);
-            
-            // 4. Execute the jump
-            moveFocus(row, col, jumpDir);
+            moveFocus(row, col); // No need to pass direction anymore
         }
     
         checkWordCompletion(newUserGrid, gridData);
