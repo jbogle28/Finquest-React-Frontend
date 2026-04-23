@@ -57,10 +57,16 @@ const Portfolio = () => {
     // Helper to calculate time remaining for Fixed Deposits
     const getMinutesLeft = (maturityDate) => {
         if (!maturityDate) return null;
+        
         const now = new Date();
         const maturity = new Date(maturityDate);
+        
+        // If maturity is an invalid date, return null to avoid "NaN mins"
+        if (isNaN(maturity.getTime())) return null;
+    
         const diffInMs = maturity - now;
         const diffInMins = Math.floor(diffInMs / (1000 * 60));
+        
         return diffInMins;
     };
 
