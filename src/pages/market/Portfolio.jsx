@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     TrendingUp, TrendingDown, Briefcase, Trash2, PieChart, 
-    X, AlertTriangle, CheckCircle, ChevronDown, ChevronUp  
+    X, AlertTriangle, CheckCircle, ChevronDown, ChevronUp, Clock  
 } from 'lucide-react';
 import financeService from '../../services/financeService';
 
@@ -54,6 +54,16 @@ const Portfolio = () => {
         setSellModal({ show: true, item });
     };
 
+    // Helper to calculate time remaining for Fixed Deposits
+    const getMinutesLeft = (maturityDate) => {
+        if (!maturityDate) return null;
+        const now = new Date();
+        const maturity = new Date(maturityDate);
+        const diffInMs = maturity - now;
+        const diffInMins = Math.floor(diffInMs / (1000 * 60));
+        return diffInMins;
+    };
+
     const confirmLiquidation = async () => {
         const { item } = sellModal;
         if (!item) return;
@@ -70,7 +80,6 @@ const Portfolio = () => {
                 }
                 result = await financeService.sellBond(bondPortfolioId);
             } else if (item.type === 'Fixed Deposit') {
-                // Fixed Deposit withdrawal logic
                 result = await financeService.withdrawFD(item.fd_id);
             }
             
@@ -120,80 +129,94 @@ const Portfolio = () => {
                             gap: isDesktop ? '20px' : '10px',
                             padding: '10px 0 25px 0'
                         }}>
-                            {items.map((item, idx) => (
-                                <motion.div 
-                                    key={item.portfolio_id || item.fd_id || idx}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    style={styles.assetCard}
-                                >
-                                    <div style={styles.assetHeader}>
-                                        <div>
-                                            <span style={styles.assetType}>{item.type}</span>
-                                            <h3 style={{...styles.assetName, fontSize: isDesktop ? '1.2rem' : '0.9rem'}}>
-                                                {item.ticker || item.name || item.institution_name}
-                                            </h3>
-                                        </div>
-                                        <p style={styles.assetQty}>{item.qty || '1'} {isDesktop ? 'Units' : 'Qty'}</p>
-                                    </div>
-                                    <div style={styles.assetBody}>
-                                        {item.type === 'Bond' ? (
-                                            <>
-                                                <div style={styles.detailRow}>
-                                                    <span>Face Value</span>
-                                                    <span>${parseFloat(item.price).toFixed(2)}</span>
-                                                </div>
-                                                <div style={styles.detailRow}>
-                                                    <span>Coupon Rate</span>
-                                                    <span style={{ color: '#a855f7', fontWeight: '700' }}>{item.coupon}</span>
-                                                </div>
-                                                <div style={styles.detailRow}>
-                                                    <span>Risk Rating</span>
-                                                    <span style={{ fontWeight: '700' }}>{item.risk}</span>
-                                                </div>
-                                            </>
-                                        ) : item.type === 'Fixed Deposit' ? (
-                                            <>
-                                                <div style={styles.detailRow}>
-                                                    <span>Principal</span>
-                                                    <span>${parseFloat(item.principal).toFixed(2)}</span>
-                                                </div>
-                                                <div style={styles.detailRow}>
-                                                    <span>Interest Rate</span>
-                                                    <span style={{ color: '#a855f7', fontWeight: '700' }}>
-                                                        {(parseFloat(item.interest_rate) * 100).toFixed(1)}%
-                                                    </span>
-                                                </div>
-                                                <div style={styles.detailRow}>
-                                                    <span>Term</span>
-                                                    <span>{item.term || 'N/A'} Months</span>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div style={styles.detailRow}>
-                                                    <span>Avg Price</span>
-                                                    <span>${parseFloat(item.avg_price).toFixed(2)}</span>
-                                                </div>
-                                                <div style={styles.detailRow}>
-                                                    <span>Market</span>
-                                                    <span style={{ color: item.current_price >= item.avg_price ? '#10b981' : '#f43f5e' }}>
-                                                        ${parseFloat(item.current_price).toFixed(2)}
-                                                    </span>
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
+                            {items.map((item, idx) => {
+                                const timeLeft = item.type === 'Fixed Deposit' ? getMinutesLeft(item.maturity_date) : null;
+                                const isMatured = timeLeft !== null && timeLeft <= 0;
 
-                                    <button 
-                                        onClick={() => initiateSell(item)}
-                                        style={{...styles.sellBtn, fontSize: isDesktop ? '0.9rem' : '0.75rem'}}
+                                return (
+                                    <motion.div 
+                                        key={item.portfolio_id || item.fd_id || idx}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        style={styles.assetCard}
                                     >
-                                        <Trash2 size={isDesktop ? 16 : 14} style={{ marginRight: '6px' }} />
-                                        {item.type === 'Fixed Deposit' ? 'Withdraw' : 'Liquidate'}
-                                    </button>
-                                </motion.div>
-                            ))}
+                                        <div style={styles.assetHeader}>
+                                            <div>
+                                                <span style={styles.assetType}>{item.type}</span>
+                                                <h3 style={{...styles.assetName, fontSize: isDesktop ? '1.2rem' : '0.9rem'}}>
+                                                    {item.ticker || item.name || item.institution_name}
+                                                </h3>
+                                            </div>
+                                            <p style={styles.assetQty}>{item.qty || '1'} {isDesktop ? 'Units' : 'Qty'}</p>
+                                        </div>
+                                        <div style={styles.assetBody}>
+                                            {item.type === 'Bond' ? (
+                                                <>
+                                                    <div style={styles.detailRow}>
+                                                        <span>Face Value</span>
+                                                        <span>${parseFloat(item.price).toFixed(2)}</span>
+                                                    </div>
+                                                    <div style={styles.detailRow}>
+                                                        <span>Coupon Rate</span>
+                                                        <span style={{ color: '#a855f7', fontWeight: '700' }}>{item.coupon}</span>
+                                                    </div>
+                                                    <div style={styles.detailRow}>
+                                                        <span>Risk Rating</span>
+                                                        <span style={{ fontWeight: '700' }}>{item.risk}</span>
+                                                    </div>
+                                                </>
+                                            ) : item.type === 'Fixed Deposit' ? (
+                                                <>
+                                                    <div style={styles.detailRow}>
+                                                        <span>Principal</span>
+                                                        <span>${parseFloat(item.principal).toFixed(2)}</span>
+                                                    </div>
+                                                    <div style={styles.detailRow}>
+                                                        <span>Status</span>
+                                                        <span style={{ 
+                                                            color: isMatured ? '#10b981' : '#f59e0b', 
+                                                            fontWeight: '700',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '4px'
+                                                        }}>
+                                                            <Clock size={12} />
+                                                            {isMatured ? 'Matured' : `${timeLeft} mins`}
+                                                        </span>
+                                                    </div>
+                                                    <div style={styles.detailRow}>
+                                                        <span>Interest</span>
+                                                        <span style={{ color: '#a855f7', fontWeight: '700' }}>
+                                                            {(parseFloat(item.interest_rate) * 100).toFixed(1)}%
+                                                        </span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div style={styles.detailRow}>
+                                                        <span>Avg Price</span>
+                                                        <span>${parseFloat(item.avg_price).toFixed(2)}</span>
+                                                    </div>
+                                                    <div style={styles.detailRow}>
+                                                        <span>Market</span>
+                                                        <span style={{ color: item.current_price >= item.avg_price ? '#10b981' : '#f43f5e' }}>
+                                                            ${parseFloat(item.current_price).toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+
+                                        <button 
+                                            onClick={() => initiateSell(item)}
+                                            style={{...styles.sellBtn, fontSize: isDesktop ? '0.9rem' : '0.75rem'}}
+                                        >
+                                            <Trash2 size={isDesktop ? 16 : 14} style={{ marginRight: '6px' }} />
+                                            {item.type === 'Fixed Deposit' ? 'Withdraw' : 'Liquidate'}
+                                        </button>
+                                    </motion.div>
+                                );
+                            })}
                         </div>
                     </motion.div>
                 )}
