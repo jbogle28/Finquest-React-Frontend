@@ -136,6 +136,7 @@ const Portfolio = () => {
                             padding: '10px 0 25px 0'
                         }}>
                             {items.map((item, idx) => {
+                                const maturityField = item.maturity_date || item.end_time;
                                 const timeLeft = item.type === 'Fixed Deposit' ? getMinutesLeft(item.maturity_date) : null;
                                 const isMatured = timeLeft !== null && timeLeft <= 0;
 
@@ -187,7 +188,7 @@ const Portfolio = () => {
                                                             gap: '4px'
                                                         }}>
                                                             <Clock size={12} />
-                                                            {isMatured ? 'Matured' : `${timeLeft} mins`}
+                                                            {timeLeft === null ? 'Pending' : (isMatured ? 'Matured' : `${timeLeft} mins`)}
                                                         </span>
                                                     </div>
                                                     <div style={styles.detailRow}>
